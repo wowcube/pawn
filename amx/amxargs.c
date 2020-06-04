@@ -121,22 +121,22 @@ static const TCHAR *rawcmdline(void)
       /* Options in /proc/<pid>/cmdline are delimited with '\0' characters
        * rather than spaces.
        */
-      int fd;
-      sprintf(cmdbuffer, "/proc/%d/cmdline", getpid());
-      if ((fd = open(cmdbuffer, O_RDONLY)) != -1) {
-        char *ptr;
-        char *end;
-        int nbytesread = read(fd, cmdbuffer, sizeof(cmdbuffer));
-        end = cmdbuffer + nbytesread;
-        close(fd);
-        /* convert '\0' characters to spaces, for uniform parsing */
-        ptr = cmdbuffer;
-        while ((ptr = strchr(ptr, '\0')) != NULL && ptr < end) {
-          *ptr++ = ' ';
-        }
-        cmdline = cmdbuffer;
-        skip++;
-      } /* if */
+      // int fd;
+      // sprintf(cmdbuffer, "/proc/%d/cmdline", getpid());
+      // if ((fd = open(cmdbuffer, O_RDONLY)) != -1) {
+      //   char *ptr;
+      //   char *end;
+      //   int nbytesread = read(fd, cmdbuffer, sizeof(cmdbuffer));
+      //   end = cmdbuffer + nbytesread;
+      //   close(fd);
+      //   /* convert '\0' characters to spaces, for uniform parsing */
+      //   ptr = cmdbuffer;
+      //   while ((ptr = strchr(ptr, '\0')) != NULL && ptr < end) {
+      //     *ptr++ = ' ';
+      //   }
+      //   cmdline = cmdbuffer;
+      //   skip++;
+      // } /* if */
     #else
       /* no mechanism for determining the commandline, so it
        * must be supplied with amx_ArgsSetCmdLine() instead.

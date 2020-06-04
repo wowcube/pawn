@@ -175,7 +175,7 @@ static void settime(cell hour,cell minute,cell second)
       tv.tv_usec = 0;
       settimeofday(&tv, 0);
     #else
-      stime(&sec1970);
+      time(&sec1970);
     #endif
   #endif
 }
