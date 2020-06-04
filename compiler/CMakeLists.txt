@@ -50,6 +50,7 @@ IF(UNIX)
   SET(PAWNCC_SRCS ${PAWNCC_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/../linux/binreloc.c)
 ENDIF(UNIX)
 ADD_EXECUTABLE(pawncc ${PAWNCC_SRCS})
+target_compile_options(pawncc PRIVATE -g3 -ggdb3)
 
 
 # Utility to create GraphViz "dot" files from the XML report (if the report contains states)
