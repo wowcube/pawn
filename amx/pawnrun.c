@@ -24,6 +24,7 @@
 #include <string.h>     /* for memset() (on some compilers) */
 #include "osdefs.h"     /* for _MAX_PATH */
 #include "amx.h"
+#include "amxargs.h"
 
 #include <time.h>
 #if !defined CLOCKS_PER_SEC     /* some (older) compilers do not have it */
@@ -307,6 +308,7 @@ void PrintUsage(char *program)
   exit(1);
 }
 
+// int amx_ArgsSetCmdLine(const char*);
 
 int main(int argc,char *argv[])
 {
@@ -379,7 +381,9 @@ int main(int argc,char *argv[])
       amx_SetDebugHook(&amx, prun_Monitor);
     } else if (strcmp(argv[i],"-time") == 0) {
       start=clock();
-    } /* if */
+    } else {
+      amx_ArgsSetCmdLine(argv[i]);
+    }
   } /* for */
 
   /* Run the compiled script and time it. The "sleep" instruction causes the

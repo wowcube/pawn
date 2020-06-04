@@ -32,6 +32,7 @@
 #include <string.h>
 #include <assert.h>
 #include "osdefs.h"
+#include "amxargs.h"
 #if defined __WIN32__ || defined __MSDOS__
   #include <malloc.h>
 #endif

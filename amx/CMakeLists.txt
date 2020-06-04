@@ -51,10 +51,10 @@ IF(WIN32)
     LINK_LIBRARIES(winmm)
   ENDIF(NOT BORLAND)
 ENDIF(WIN32)
-IF(APPLE)
-  # OS X defaults to 64-bit build, but 64-bit issues prevent that being a good idea
-  SET(CMAKE_OSX_ARCHITECTURES "i386")
-ENDIF(APPLE)
+# IF(APPLE)
+#   # OS X defaults to 64-bit build, but 64-bit issues prevent that being a good idea
+#   SET(CMAKE_OSX_ARCHITECTURES "i386")
+# ENDIF(APPLE)
 
 # --------------------------------------------------------------------------
 # Extension modules
@@ -250,11 +250,14 @@ SET_TARGET_PROPERTIES(pawnrun PROPERTIES COMPILE_FLAGS -DAMXDBG COMPILE_FLAGS -D
 IF (UNIX)
   IF(HAVE_CURSES_H)
 #   SET_TARGET_PROPERTIES(pawnrun PROPERTIES COMPILE_FLAGS -DUSE_CURSES)
-    TARGET_LINK_LIBRARIES(pawnrun dl curses)
+    TARGET_LINK_LIBRARIES(pawnrun dl curses amxDGram amxFile amxFixed amxFloat amxProcess amxString amxTime)
   ELSE(HAVE_CURSES_H)
-    TARGET_LINK_LIBRARIES(pawnrun dl)
+    TARGET_LINK_LIBRARIES(pawnrun dl amxDGram amxFile amxFixed amxFloat amxProcess amxString amxTime)
   ENDIF(HAVE_CURSES_H)
 ENDIF (UNIX)
+#if (APPLE)
+#  target_link_libraries(pawnrun amxDGram amxFile amxFixed amxFloat amxProcess amxString amxTime)
+#endif()
 
 # --------------------------------------------------------------------------
 # Simple console debugger
