@@ -121,7 +121,6 @@ static const TCHAR *rawcmdline(void)
        * rather than spaces.
        */
       int fd;
-      printf("pid: %d\n", getpid());
       sprintf(cmdbuffer, "/proc/%d/cmdline", getpid());
       if ((fd = open(cmdbuffer, O_RDONLY)) != -1) {
         char *ptr;
