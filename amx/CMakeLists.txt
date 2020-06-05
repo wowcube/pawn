@@ -260,6 +260,8 @@ ENDIF (UNIX)
 #  target_link_libraries(pawnrun amxDGram amxFile amxFixed amxFloat amxProcess amxString amxTime)
 #endif()
 
+install(TARGETS pawnrun pawncc amxArgs amxDGram amxFile amxFixed amxFloat amxProcess amxString amxTime)
+
 # --------------------------------------------------------------------------
 # Simple console debugger
 
