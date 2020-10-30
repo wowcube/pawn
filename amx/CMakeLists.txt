@@ -23,10 +23,10 @@ CHECK_INCLUDE_FILE("stdint.h" HAVE_STDINT_H)
 IF(HAVE_STDINT_H)
   ADD_DEFINITIONS(-DHAVE_STDINT_H)
 ENDIF(HAVE_STDINT_H)
-CHECK_INCLUDE_FILE("curses.h" HAVE_CURSES_H)
-IF(HAVE_CURSES_H)
-  ADD_DEFINITIONS(-DHAVE_CURSES_H)
-ENDIF(HAVE_CURSES_H)
+#CHECK_INCLUDE_FILE("curses.h" HAVE_CURSES_H)
+#IF(HAVE_CURSES_H)
+#  ADD_DEFINITIONS(-DHAVE_CURSES_H)
+#ENDIF(HAVE_CURSES_H)
 CHECK_INCLUDE_FILE("alloca.h" HAVE_ALLOCA_H)
 IF(HAVE_ALLOCA_H)
   ADD_DEFINITIONS(-DHAVE_ALLOCA_H)
@@ -51,10 +51,6 @@ IF(WIN32)
     LINK_LIBRARIES(winmm)
   ENDIF(NOT BORLAND)
 ENDIF(WIN32)
-IF(APPLE)
-  # OS X defaults to 64-bit build, but 64-bit issues prevent that being a good idea
-  SET(CMAKE_OSX_ARCHITECTURES "i386")
-ENDIF(APPLE)
 
 # --------------------------------------------------------------------------
 # Extension modules
@@ -243,6 +239,11 @@ IF (UNIX)
   ENDIF(NOT HAVE_CURSES_H)
 ENDIF (UNIX)
 ADD_EXECUTABLE(pawnrun ${PAWNRUN_SRCS})
+target_compile_options(pawnrun PRIVATE
+#        -g3 -ggdb3
+        )
+add_dependencies(pawnrun amxArgs amxDGram amxFile amxFixed amxFloat amxProcess amxString amxTime)
+
 SET_TARGET_PROPERTIES(pawnrun PROPERTIES COMPILE_FLAGS -DAMXDBG COMPILE_FLAGS -DENABLE_BINRELOC)
 IF (UNIX)
   IF(HAVE_CURSES_H)
@@ -252,6 +253,8 @@ IF (UNIX)
     TARGET_LINK_LIBRARIES(pawnrun dl)
   ENDIF(HAVE_CURSES_H)
 ENDIF (UNIX)
+
+install(TARGETS pawnrun pawncc amxArgs amxDGram amxFile amxFixed amxFloat amxProcess amxString amxTime)
 
 # --------------------------------------------------------------------------
 # Simple console debugger
