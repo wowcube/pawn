@@ -40,6 +40,8 @@
 #endif
 #if defined __GNUC__ || defined __clang__
   #include <unistd.h>
+  #include <fcntl.h>
+
 #endif
 #include "amx.h"
 
@@ -79,7 +81,7 @@
    * host application takes the name of the script as the first parameter).
    * This can optionally be ignored.
    */
-  #define AMXARGS_SKIPARG 0
+  #define AMXARGS_SKIPARG 1
 #endif
 
 
@@ -118,22 +120,17 @@ static const TCHAR *rawcmdline(void)
       /* Options in /proc/<pid>/cmdline are delimited with '\0' characters
        * rather than spaces.
        */
-      FILE *fp;
-      size_t fsize;
+      int fd;
       sprintf(cmdbuffer, "/proc/%d/cmdline", getpid());
-      if ((fp = fopen(cmdbuffer, "r")) != NULL) {
-        char *ptr;
-        fseek(fp, 0, SEEK_END);
-        fsize = ftell(fp);
-        fseek(fp, 0, SEEK_SET);
-        if (fsize >= sizeof cmdbuffer)
-          fsize = sizeof cmdbuffer - 1;
-        fread(cmdbuffer, 1, fsize, fp);
-        fclose(fp);
-        cmdbuffer[fsize] = '\0';        /* terminate with double-zero */
+      if ((fd = open(cmdbuffer, O_RDONLY)) != -1) {
+        int nbytesread = read(fd, cmdbuffer, sizeof(cmdbuffer));
+        char *end = cmdbuffer + nbytesread;
+        close(fd);
         /* convert '\0' characters to spaces, for uniform parsing */
-        for (ptr = cmdbuffer; *ptr != ' '; ptr = strchr(ptr, '\0') + 1)
-          *ptr = ' ';
+        char *ptr = cmdbuffer;
+        while ((ptr = strchr(ptr, '\0')) != NULL && ptr < end) {
+          *ptr++ = ' ';
+        }
         cmdline = cmdbuffer;
         skip++;
       } /* if */
