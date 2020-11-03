@@ -1123,8 +1123,10 @@ static int VerifyPcode(AMX *amx)
     strcat(libname,source);
     #if defined _Windows
       strcat(libname,".dll");
-    #elif defined __LINUX__ || defined __FreeBSD__ || defined __OpenBSD__ || defined __APPLE__
+    #elif defined __LINUX__ || defined __FreeBSD__ || defined __OpenBSD__
       strcat(libname,".so");
+    #elif defined __APPLE__
+      strcat(libname,".dylib");
     #endif
   }
 #endif
