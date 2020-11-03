@@ -42,6 +42,9 @@
     #include <sys/types.h>
     #include <sys/mman.h>
   #endif
+  #if !defined AMX_ANSIONLY
+    #include <wchar.h>
+  #endif
 #endif
 #if defined __LCC__ || defined __LINUX__
   #include <wchar.h>    /* for wcslen() */
