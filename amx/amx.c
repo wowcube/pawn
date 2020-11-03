@@ -45,6 +45,11 @@
   #if !defined AMX_ANSIONLY
     #include <wchar.h>
   #endif
+  #if defined __APPLE__
+    #include <zconf.h>
+    #include <errno.h>
+    #include <libproc.h>
+  #endif
 #endif
 #if defined __LCC__ || defined __LINUX__
   #include <wchar.h>    /* for wcslen() */
@@ -1325,8 +1330,24 @@ int AMXAPI amx_Init(AMX *amx,void *program)
           if (hlib<=HINSTANCE_ERROR)
             hlib=NULL;
         #endif
-      #elif defined __LINUX__ || defined __FreeBSD__ || defined __OpenBSD__ || defined __APPLE__
+      #elif defined __LINUX__ || defined __FreeBSD__ || defined __OpenBSD__
         hlib=dlopen(libname,RTLD_NOW);
+      #elif defined __APPLE__
+        /* try to search library in pidpath
+         */
+        char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
+        int ret=proc_pidpath(getpid(), pathbuf, sizeof(pathbuf));
+        if (ret>0) {
+            *(strrchr(pathbuf, '/')) = 0;
+            char *libbuf;
+            asprintf(&libbuf, "%s/%s", pathbuf, libname);
+            hlib=dlopen(libbuf,RTLD_NOW);
+        }
+        if (hlib==NULL) {
+            /* if failed, try to search elsewhere
+             */
+            hlib=dlopen(libname,RTLD_NOW);
+        }
       #endif
       if (hlib!=NULL) {
         /* a library that cannot be loaded or that does not have the required
