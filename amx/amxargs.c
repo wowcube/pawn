@@ -86,12 +86,11 @@
 
 #if defined __APPLE__
 #include <sys/sysctl.h>
-#define pid_of(pproc) pproc->kp_proc.p_pid
-char *argv_of_pid(int pid) {
-    int mib[3], argmax, nargs, c = 0;
+/* Returns size of buffer */
+int get_argv(void *buffer, size_t buffer_size) {
+    int mib[3], argmax, nargs;
     size_t size;
     char *procargs, *sp, *np, *cp;
-    int show_args = 1;
 
     mib[0] = CTL_KERN;
     mib[1] = KERN_ARGMAX;
@@ -151,7 +150,7 @@ char *argv_of_pid(int pid) {
      */
     mib[0] = CTL_KERN;
     mib[1] = KERN_PROCARGS2;
-    mib[2] = pid;
+    mib[2] = getpid();
 
 
     size = (size_t) argmax;
@@ -193,27 +192,12 @@ char *argv_of_pid(int pid) {
      * know where the command arguments end and the environment strings
      * start, which is why the '=' character is searched for as a heuristic.
      */
-    for (np = NULL; c < nargs && cp < &procargs[size]; cp++) {
+    int arg_n = 0;
+    for (np = NULL; arg_n < nargs && cp < &procargs[size]; cp++) {
         if (*cp == '\0') {
-            c++;
-            if (np != NULL) {
-                /* Convert previous '\0'. */
-                *np = ' ';
-            } else {
-                /* *argv0len = cp - sp; */
-            }
+            arg_n++;
             /* Note location of current '\0'. */
             np = cp;
-
-            if (!show_args) {
-                /*
-                 * Don't convert '\0' characters to ' '.
-                 * However, we needed to know that the
-                 * command name was terminated, which we
-                 * now know.
-                 */
-                break;
-            }
         }
     }
 
@@ -221,23 +205,24 @@ char *argv_of_pid(int pid) {
      * sp points to the beginning of the arguments/environment string, and
      * np should point to the '\0' terminator for the string.
      */
-    if (np == NULL || np == sp) {
-        /* Empty or unterminated string. */
-        goto ERROR_B;
-    }
+    //if (np == NULL || np == sp) {
+    //    /* Empty or unterminated string. */
+    //    goto ERROR_B;
+    //}
 
-    /* Make a copy of the string. */
-    //printf("%s\n", sp);
+    ssize_t s = np - sp;
+    s = buffer_size < s ? buffer_size : s;
+    memcpy(buffer, sp, s);
 
     /* Clean up. */
     free(procargs);
-    return sp;
+    return s;
 
     ERROR_B:
     free(procargs);
     ERROR_A:
     fprintf(stderr, "Failed to get argv.\n");
-    exit(2);
+    return 0;
 }
 #endif
 
@@ -252,13 +237,13 @@ static const TCHAR *rawcmdline(void)
   #elif defined __LINUX__ || defined __APPLE__
     static char cmdbuffer[1024];  /* some arbitrary maximum */
   #endif
-  const TCHAR *ptr;
-  int skip = 0;
+  TCHAR *ptr = NULL;
+  int skip;
+  int remain_to_skip;
 
   if (cmdline == NULL) {
     #if defined __WIN32__ || defined _WIN32 || defined WIN32
       cmdline = GetCommandLine();
-      skip++;
     #elif defined _Windows || defined __MSDOS__
       #if defined _Windows
         unsigned short _psp = GetCurrentPDB();
@@ -276,23 +261,19 @@ static const TCHAR *rawcmdline(void)
       /* Options in /proc/<pid>/cmdline are delimited with '\0' characters
        * rather than spaces.
        */
+      char *end = NULL;
       int fd;
       sprintf(cmdbuffer, "/proc/%d/cmdline", getpid());
       if ((fd = open(cmdbuffer, O_RDONLY)) != -1) {
         int nbytesread = read(fd, cmdbuffer, sizeof(cmdbuffer));
-        char *end = cmdbuffer + nbytesread;
+        end = cmdbuffer + nbytesread;
         close(fd);
-        /* convert '\0' characters to spaces, for uniform parsing */
-        char *ptr = cmdbuffer;
-        while ((ptr = strchr(ptr, '\0')) != NULL && ptr < end) {
-          *ptr++ = ' ';
-        }
         cmdline = cmdbuffer;
-        skip++;
       } /* if */
     #elif defined __APPLE__
-      cmdline = argv_of_pid(getpid());
-      skip++;
+      int nbytesread = get_argv(cmdbuffer, sizeof(cmdbuffer));
+      char *end = cmdbuffer + nbytesread;
+      cmdline = cmdbuffer;
     #else
       /* no mechanism for determining the commandline, so it
        * must be supplied with amx_ArgsSetCmdLine() instead.
@@ -300,20 +281,45 @@ static const TCHAR *rawcmdline(void)
       ptr = "";
     #endif
 
+    #if defined __WIN32__ || defined _WIN32 || defined WIN32 || defined _Windows || defined __MSDOS__
+      /* skip leading white space */
+      while (*cmdline <= __T(' ') && *cmdline != __T('\0'))
+        cmdline++;
+
+      skip = 1 + AMXARGS_SKIPARG;
+      remain_to_skip = skip;
+    #elif defined __LINUX__ || defined __APPLE__
+      skip = 1 + AMXARGS_SKIPARG;
+      remain_to_skip = skip;
+      ptr = cmdbuffer;
+      while (ptr < end) {
+        if ((ptr = strchr(ptr, '\0')) != NULL)
+          if (remain_to_skip-->0) {
+            cmdline = ptr;
+            break;
+          }
+      }
+
+      /* convert '\0' characters to spaces, for uniform parsing */
+      if (end != NULL) {
+        while ((ptr = strchr(ptr, '\0')) != NULL && ptr < end) {
+          *ptr++ = ' ';
+        }
+      }
+    #endif
+
     /* skip leading white space */
     while (*cmdline <= __T(' ') && *cmdline != __T('\0'))
       cmdline++;
 
-    skip += AMXARGS_SKIPARG;
-
     /* skip the first option(s), because it is the name of the host program
      * and the name of the script
      */
-    if ((ptr = tokenize(cmdline, skip, NULL)) != NULL)
+    if ((ptr = tokenize(cmdline, remain_to_skip, NULL)) != NULL) {
       cmdline = ptr;
-    else
+    } else {
       cmdline = _tcschr(cmdline, __T('\0'));
-
+    }
   } /* if */
 
   return cmdline;
