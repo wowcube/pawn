@@ -64,6 +64,7 @@ void sigabort(int sig)
 }
 
 typedef struct tagSTACKINFO {
+  long curstack, curheap;
   long maxstack, maxheap;
 } STACKINFO;
 
@@ -82,10 +83,12 @@ int AMXAPI prun_Monitor(AMX *amx)
   /* record the heap and stack usage */
   err = amx_GetUserData(amx, AMX_USERTAG('S','t','c','k'), (void**)&stackinfo);
   if (err == AMX_ERR_NONE) {
-    if (amx->stp - amx->stk > stackinfo->maxstack)
-      stackinfo->maxstack = amx->stp - amx->stk;
-    if (amx->hea - amx->hlw > stackinfo->maxheap)
-      stackinfo->maxstack = amx->stp - amx->stk;
+    stackinfo->curstack = amx->stp - amx->stk;
+    stackinfo->curheap = amx->hea - amx->hlw;
+    if (stackinfo->curstack > stackinfo->maxstack)
+      stackinfo->maxstack = stackinfo->curstack;
+    if (stackinfo->curheap > stackinfo->maxheap)
+      stackinfo->maxheap = stackinfo->curheap;
   } /* if */
 
   /* check whether an "abort" was requested */
@@ -360,7 +363,9 @@ int main(int argc,char *argv[])
     idlefunc = NULL;
 
   for (i = 2; i < argc; i++) {
-    if (strcmp(argv[i],"-stack") == 0) {
+    if (0 == 0) {
+    // if (strcmp(argv[i],"-stack") == 0) {
+      // printf("-stack accepted\n");
       uint16_t flags;
       amx_Flags(&amx, &flags);
       if ((flags & AMX_FLAG_NOCHECKS) != 0)
@@ -421,8 +426,19 @@ int main(int argc,char *argv[])
    * but we do that here too.
    */
   if (idlefunc != NULL) {
-    while ((err = idlefunc(&amx,amx_Exec)) == AMX_ERR_NONE)
-      /* nothing */;
+    time_t last_out_time = 0;
+    while ((err = idlefunc(&amx,amx_Exec)) == AMX_ERR_NONE) {
+      time_t cur_out_time;
+      time(&cur_out_time);
+      time_t delta = cur_out_time - last_out_time;
+      static int OUT_TIME_FREQ = 1; // 1 sec
+      if (delta >= OUT_TIME_FREQ) {
+        printf("Stack: %ld bytes (max %ld bytes), Heap: %ld bytes (max %ld bytes), 1 cell = %llu bytes\n",
+               stackinfo.curstack, stackinfo.maxstack, stackinfo.curheap, stackinfo.maxheap, sizeof(cell));
+        // fflush(stdout); // Will now print everything in the stdout buffer
+        last_out_time = cur_out_time;
+      }
+    }
     ExitOnError(&amx, err);
   } /* if */
 
